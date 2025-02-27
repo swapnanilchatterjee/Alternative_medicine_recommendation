@@ -1,37 +1,43 @@
+
+import streamlit as st
 import pandas as pd
 import numpy as np
 import pickle
 import tensorflow as tf
 from tensorflow import keras
-from flask import Flask, request, jsonify
-from flask_cors import CORS
 import os
 
-# Print working directory for debugging
-print("Current Directory:", os.getcwd())
+# Set Streamlit title and description
+st.title("Medicine Recommendation System")
+st.write("Enter the composition to get the top recommended medicines based on AI predictions.")
 
+# Print working directory for debugging
+# st.write("Current Directory:", os.getcwd())
 # Load the trained model
 try:
-    model = keras.models.load_model("medicine_recommender.keras")
-    print("Model loaded successfully!")
+    model = keras.models.load_model("C:\\Users\\tmann\\snu\\Alternative_medicine_recommendation\\medicine_recommender.keras")
+
+    st.success("Model loaded successfully!")
 except Exception as e:
-    print("Error loading model:", str(e))
+    st.error(f"Error loading model: {str(e)}")
 
 # Load the vectorizer
+vectorizer_path = "C:\\Users\\tmann\\snu\\Alternative_medicine_recommendation\\vectorizer.pkl"
 try:
-    with open("vectorizer.pkl", "rb") as f:
-        vectorizer = pickle.load(f)
+    with open(vectorizer_path, "rb") as f:
+        vectorizer = pickle.load(f)  # Load inside 'with' block
     print("Vectorizer loaded successfully!")
 except Exception as e:
-    print("Error loading vectorizer:", str(e))
+    print(f"Error loading vectorizer: {e}")
 
 # Load the dataset
+dataset_path = "C:\\Users\\tmann\\snu\\Alternative_medicine_recommendation\\A_Z_medicines_dataset_of_India.csv"
+
 try:
-    df = pd.read_csv("A_Z_medicines_dataset_of_India.csv")
+    df = pd.read_csv(dataset_path)
     print("Dataset loaded successfully!")
 except Exception as e:
-    print("Error loading dataset:", str(e))
-
+    print(f"Error loading dataset: {e}")
 
 # Function to recommend medicines
 def recommend_medicine(composition_query, top_n=5):
@@ -46,34 +52,21 @@ def recommend_medicine(composition_query, top_n=5):
         top_indices = predictions.argsort()[-top_n:][::-1]
 
         # Fetch medicine names and prices
-        recommendations = df.iloc[top_indices][["name", "price(₹)"]].to_dict(orient="records")
-
+        recommendations = df.iloc[top_indices][["name", "price(₹)"]]
         return recommendations
     except Exception as e:
-        return {"error": str(e)}
+        return str(e)
 
+# User Input for Composition Query
+composition_query = st.text_input("Enter Medicine Composition:")
 
-# Flask API Setup
-app = Flask(__name__)
-CORS(app)  # Enable CORS for cross-origin requests
-
-# Home route to prevent 404 errors
-@app.route("/", methods=["GET"])
-def home():
-    return "Medicine Recommendation API is running!"
-
-
-@app.route("/recommend", methods=["POST"])
-def get_recommendation():
-    data = request.json
-    composition_query = data.get("composition", "")
-
-    if not composition_query:
-        return jsonify({"error": "Composition is required"}), 400
-
-    recommendations = recommend_medicine(composition_query)
-    return jsonify({"recommendations": recommendations})
-
-
-if __name__ == "__main__":
-    app.run(port=5000, debug=True)
+if st.button("Get Recommendations"):
+    if composition_query:
+        recommendations = recommend_medicine(composition_query)
+        if isinstance(recommendations, str):
+            st.error(f"Error: {recommendations}")
+        else:
+            st.write("### Recommended Medicines:")
+            st.dataframe(recommendations)
+    else:
+        st.warning("Please enter a composition to get recommendations.")
