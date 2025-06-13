@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: medicine-recommendation-app
+    env: python
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    startCommand: streamlit run main.py --server.port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10
